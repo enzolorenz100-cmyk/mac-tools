@@ -1,0 +1,23 @@
+# Build-Artefakte
+.build/
+*.app/
+dist/
+
+# Große Modelle (per README nachladen)
+models/
+*.bin
+
+# Lokale Daten / Logs / Vault
+logs/
+vault/
+.lock/
+
+# Geheimnisse — NIEMALS committen
+.anthropic-api-key
+*.p12
+*.key
+*.pem
+
+# macOS / Editor / Claude-Session
+.DS_Store
+.claude/

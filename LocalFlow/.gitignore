@@ -1,0 +1,8 @@
+models/
+.build/
+*.wav
+LocalFlow.app/
+localflow-signing.p12
+*.key
+*.crt
+*.p12
