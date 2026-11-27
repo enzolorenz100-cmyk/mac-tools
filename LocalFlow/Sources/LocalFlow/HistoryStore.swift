@@ -19,8 +19,16 @@ final class HistoryStore {
     private var db: OpaquePointer?
     private let queue = DispatchQueue(label: "localflow.history")
 
-    init() {
+    /// `readOnly: true` öffnet die DB nur lesend und legt nichts an (für CLI-Auswertungen,
+    /// die neben der laufenden App nichts verändern dürfen).
+    init(readOnly: Bool = false) {
         let url = Settings.appSupportDir.appendingPathComponent("history.sqlite")
+        if readOnly {
+            if sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY, nil) != SQLITE_OK {
+                sqlite3_close(db); db = nil
+            }
+            return
+        }
         try? FileManager.default.createDirectory(at: Settings.appSupportDir, withIntermediateDirectories: true)
         if sqlite3_open(url.path, &db) != SQLITE_OK {
             Log.error("History-DB konnte nicht geöffnet werden")
@@ -96,6 +104,34 @@ final class HistoryStore {
             }
             s.avgLatency = s.count > 0 ? latencySum / Double(s.count) : 0
             return s
+        }
+    }
+
+    struct WeekStats {
+        var count: Int = 0
+        var words: Int = 0
+        var recordedSeconds: Double = 0   // Summe duration_s = Länge der Aufnahmen (inkl. Pausen)
+    }
+
+    /// Diktate, Wörter und Aufnahmedauer der letzten `days` Tage (rollierend ab jetzt).
+    /// Wortzählung wie in `stats()`, damit beide Anzeigen zusammenpassen.
+    func weekStats(days: Int = 7) -> WeekStats {
+        queue.sync { [self] in
+            var w = WeekStats()
+            var stmt: OpaquePointer?
+            let since = Date().timeIntervalSince1970 - Double(days) * 86400
+            let sql = "SELECT formatted_text, duration_s FROM history WHERE ts >= ?"
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return w }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_double(stmt, 1, since)
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                w.count += 1
+                if let c = sqlite3_column_text(stmt, 0) {
+                    w.words += String(cString: c).split(whereSeparator: { $0 == " " || $0 == "\n" }).count
+                }
+                w.recordedSeconds += sqlite3_column_double(stmt, 1)
+            }
+            return w
         }
     }
 

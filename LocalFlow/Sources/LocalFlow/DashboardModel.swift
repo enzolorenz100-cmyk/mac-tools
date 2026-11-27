@@ -6,6 +6,7 @@ final class DashboardModel: ObservableObject {
     @Published var entries: [HistoryEntry] = []
     @Published var stats: HistoryStore.Stats = .init()
     @Published var query: String = "" { didSet { applyFilter() } }
+    @Published var nachtschichtBusy = false
 
     private let history: HistoryStore
     private let onInsert: (String) -> Void
@@ -40,6 +41,13 @@ final class DashboardModel: ObservableObject {
     func delete(_ entry: HistoryEntry) {
         history.delete(id: entry.id)
         reload()
+    }
+
+    /// Rechnet im Hintergrund, zeigt vor dem Senden die Zahlen und öffnet dann den Browser.
+    func shareNachtschicht() {
+        NachtschichtShare.start(history: history) { [weak self] busy in
+            self?.nachtschichtBusy = busy
+        }
     }
 
     func deleteAll() {
