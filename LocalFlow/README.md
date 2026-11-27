@@ -53,6 +53,29 @@ Mehr braucht LocalFlow nicht — keine Bildschirmaufnahme, keine Automation.
 - **snippets**: `trigger` (gesprochene Phrase) → `expansion` (eingefügter Text).
 - **language**: `"auto"` (Standard), `"de"` oder `"en"`; **hotkey**: `"fn"`, `"rightOption"`, `"rightCommand"`.
 
+## Nachtschicht
+
+„Die Nachtschicht" ist ein öffentliches Builder-Leaderboard auf [sleeplessenzo.com](https://sleeplessenzo.com). Im Dashboard (Knopf **„Für die Nachtschicht teilen"**) und im Menüleisten-Menü (**„Für die Nachtschicht teilen…"**) kannst du deine Zahlen der letzten 7 Tage einreichen.
+
+**Die Zahlen sind selbst gemeldet.** LocalFlow rechnet sie lokal aus, zeigt sie dir in einem Dialog und öffnet dann im Browser ein vorausgefülltes GitHub-Issue-Formular (`enzolorenz100-cmyk/sleeplessenzo`, Vorlage `checkin.yml`). Nichts wird automatisch gesendet: Erst wenn du im Formular selbst auf „Submit" klickst, ist der Check-in eingereicht — und du kannst jede Zahl vorher ändern.
+
+Genau das wird als URL-Parameter übergeben, sonst nichts:
+
+| Parameter | Inhalt |
+|---|---|
+| `quelle` | immer `localflow` |
+| `lf_woerter` | diktierte Wörter der letzten 7 Tage (Leerzeichen-Zählung über den formatierten Text) |
+| `lf_diktate` | Anzahl Diktate der letzten 7 Tage |
+| `lf_minuten` | Summe der Aufnahmedauer in Minuten (Länge der Aufnahmen inkl. Pausen, nicht reine Sprechzeit) |
+| `agent_stunden` | „Agentic Hours": aktive Stunden deiner Claude-Code-Agenten der letzten 7 Tage |
+| `handle` | nur wenn du im Dialog einen Handle einträgst |
+
+**Kein Diktattext, kein Transkripttext, keine Dateinamen** verlassen den Mac.
+
+**So entstehen die Agentic Hours:** LocalFlow durchsucht `~/.claude/projects/*/*.jsonl` (Claude-Code-Transkripte), die in den letzten 7 Tagen geändert wurden, ausschließlich nach den `"timestamp"`-Werten. Pro Datei zählen Abstände unter 5 Minuten zwischen aufeinanderfolgenden Zeitstempeln als aktive Zeit; parallele Sitzungen addieren sich. Unteragenten-Transkripte in tieferen Ordnern (`…/subagents/`) werden nicht mitgezählt. Fehlt der Ordner, ist der Wert 0. Weil Transkripte GB groß werden können, merkt sich LocalFlow in `~/Library/Application Support/LocalFlow/nachtschicht-cache.json`, bis wohin jede Datei gelesen ist (nur Zahlen: Offset, letzter Zeitstempel, aktive Sekunden je 5-Minuten-Fenster) — der erste Lauf liest alles, danach nur neu angehängte Bytes.
+
+Prüfen ohne App-Fenster: `LocalFlow.app/Contents/MacOS/LocalFlow --nachtschicht-stats` gibt die geteilten Zahlen samt Messdaten als JSON aus (`--no-cache` liest alles frisch, `--cache <pfad>` nimmt einen anderen Cache-Ort, `--root <pfad>` einen anderen Transkript-Ordner).
+
 ## Bekannte Stolperfallen
 
 - **Nach jedem Rebuild Accessibility neu erteilen:** Die App ist standardmäßig ad-hoc-signiert; jede neue Kompilierung hat eine neue Identität und macOS invalidiert den Bedienungshilfen-Grant *still* (Schalter sieht aktiv aus, wirkt aber nicht). Fix: Schalter einmal aus/an. Dauerhafte Lösung für alle, die selbst bauen: eigenes selbstsigniertes Codesigning-Zertifikat erzeugen (die `openssl`-Befehle stehen in `scripts/setup-signing-cert.sh`; die entstehende `localflow-signing.p12` bleibt lokal und gehört **nicht** ins Repo), dann einmalig `scripts/setup-signing-cert.sh` ausführen — `build.sh` findet und nutzt das Zertifikat automatisch.

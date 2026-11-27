@@ -48,6 +48,12 @@ struct DashboardView: View {
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
             Spacer()
+            Button { model.shareNachtschicht() } label: {
+                Label(model.nachtschichtBusy ? "Berechne …" : "Für die Nachtschicht teilen",
+                      systemImage: "moon.stars")
+            }
+            .disabled(model.nachtschichtBusy)
+            .help("Zahlen der letzten 7 Tage (Wörter, Diktate, Minuten, Agentic Hours) ans Nachtschicht-Leaderboard übergeben — kein Text")
             Menu {
                 Text("Verlauf belegt nur \(model.storageText()) (nur Text, kein Audio)")
                 Button(role: .destructive) { showClearConfirm = true } label: {

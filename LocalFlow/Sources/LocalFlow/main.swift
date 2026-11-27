@@ -111,6 +111,44 @@ if args.contains("--paste-test") {
     exit(ok ? 0 : 1)
 }
 
+if args.contains("--nachtschicht-stats") {
+    // Gibt genau die Zahlen aus, die „Für die Nachtschicht teilen“ übergeben würde, plus Messdaten.
+    // --no-cache: alles frisch lesen, Cache weder lesen noch schreiben.
+    // --cache <pfad>: anderer Cache-Ort (Default: Application Support/LocalFlow/nachtschicht-cache.json).
+    let cacheURL: URL? = args.contains("--no-cache") ? nil
+        : args.firstIndex(of: "--cache").flatMap { i in i + 1 < args.count ? URL(fileURLWithPath: args[i + 1]) : nil }
+            ?? AgenticHours.defaultCacheURL
+    // --root <pfad>: anderer Transkript-Ordner (für Tests; Default ~/.claude/projects).
+    let root = args.firstIndex(of: "--root").flatMap { i in i + 1 < args.count ? URL(fileURLWithPath: args[i + 1]) : nil }
+        ?? AgenticHours.defaultRoot
+    let agentic = AgenticHours.compute(root: root, cacheURL: cacheURL)
+    let history = HistoryStore(readOnly: true)
+    let snap = NachtschichtSnapshot.collect(history: history, agentic: agentic)
+    let out: [String: Any] = [
+        "geteilt": [
+            "quelle": "localflow",
+            "lf_woerter": snap.woerter,
+            "lf_diktate": snap.diktate,
+            "lf_minuten": snap.minuten,
+            "agent_stunden": snap.agentStunden,
+        ],
+        "share_url": snap.shareURL(handle: "")?.absoluteString ?? "",
+        "messung": [
+            "agent_sekunden_exakt": (agentic.seconds * 10).rounded() / 10,
+            "ordner_fehlt": agentic.folderMissing,
+            "dateien_im_fenster": agentic.filesInWindow,
+            "dateien_gelesen": agentic.filesRead,
+            "bytes_gelesen": agentic.bytesRead,
+            "zeitstempel_gesehen": agentic.timestampsSeen,
+            "dauer_s": (agentic.elapsed * 1000).rounded() / 1000,
+            "cache": cacheURL?.path ?? "aus",
+        ],
+    ]
+    let json = try! JSONSerialization.data(withJSONObject: out, options: [.prettyPrinted, .sortedKeys])
+    print(String(data: json, encoding: .utf8)!)
+    exit(0)
+}
+
 if args.contains("--check") {
     let settings = Settings.load()
     let ax = HotkeyManager.hasAccessibilityPermission(prompt: false)

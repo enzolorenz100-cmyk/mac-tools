@@ -33,6 +33,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         pasteItem.target = self
         menu.addItem(pasteItem)
 
+        let shareItem = NSMenuItem(title: "Für die Nachtschicht teilen…", action: #selector(shareNachtschicht), keyEquivalent: "")
+        shareItem.target = self
+        menu.addItem(shareItem)
+
         let historyMenu = NSMenu()
         let historyItem = NSMenuItem(title: "Zuletzt (Schnellzugriff)", action: nil, keyEquivalent: "")
         historyItem.submenu = historyMenu
@@ -111,6 +115,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func openDashboard() { historyWindow.show() }
     func openDashboardPublic() { historyWindow.show() }
+
+    @objc private func shareNachtschicht() { NachtschichtShare.start(history: history) }
 
     @objc private func pasteLast() { controller.pasteLastRequested() }
 
